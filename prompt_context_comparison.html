@@ -1,0 +1,265 @@
+
+<style>
+  h2.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+  .root { padding: 1rem 0; font-family: var(--font-sans); }
+  .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+  .tab { padding: 8px 20px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: transparent; color: var(--color-text-secondary); cursor: pointer; font-size: 14px; transition: all 0.15s; }
+  .tab.active { background: var(--color-background-secondary); color: var(--color-text-primary); border-color: var(--color-border-primary); font-weight: 500; }
+  .panel { display: none; } .panel.active { display: block; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 13px; color: var(--color-text-secondary); }
+  select, input[type=text] { padding: 8px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); font-size: 14px; width: 100%; box-sizing: border-box; }
+  .gen-btn { margin-top: 1rem; padding: 10px 24px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: transparent; color: var(--color-text-primary); cursor: pointer; font-size: 14px; width: 100%; }
+  .gen-btn:hover { background: var(--color-background-secondary); }
+  .gen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .output { margin-top: 1.5rem; padding: 1.25rem; background: var(--color-background-secondary); border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); min-height: 80px; font-size: 14px; line-height: 1.7; color: var(--color-text-primary); white-space: pre-wrap; }
+  .output.loading { color: var(--color-text-tertiary); font-style: italic; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .compare-card { padding: 1.25rem; background: var(--color-background-secondary); border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); }
+  .compare-card h3 { font-size: 14px; font-weight: 500; margin: 0 0 0.75rem; color: var(--color-text-primary); }
+  .compare-card .out { font-size: 13px; line-height: 1.7; color: var(--color-text-primary); white-space: pre-wrap; min-height: 60px; }
+  .compare-card .out.loading { color: var(--color-text-tertiary); font-style: italic; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: var(--border-radius-md); margin-bottom: 8px; }
+  .badge-a { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .badge-b { background: var(--color-background-success); color: var(--color-text-success); }
+  .insight-box { margin-top: 1.5rem; padding: 1rem 1.25rem; border-left: 2px solid var(--color-border-info); background: var(--color-background-info); border-radius: 0; }
+  .insight-box p { font-size: 13px; color: var(--color-text-secondary); margin: 0; line-height: 1.6; }
+  .insight-box strong { color: var(--color-text-primary); font-weight: 500; }
+  .status { font-size: 12px; color: var(--color-text-tertiary); margin-top: 8px; min-height: 16px; }
+</style>
+
+<div class="root">
+  <h2 class="sr-only">Interactive comparison of a generic vs. context-rich learning roadmap prompt</h2>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('solo')">Try each prompt</button>
+    <button class="tab" onclick="showTab('compare')">Side-by-side compare</button>
+  </div>
+
+  <div id="solo" class="panel active">
+    <div class="tabs" style="margin-bottom:1rem;">
+      <button class="tab active" id="st-a" onclick="showSubTab('a')">Prompt A — no context</button>
+      <button class="tab" id="st-b" onclick="showSubTab('b')">Prompt B — with context</button>
+    </div>
+
+    <div id="panel-a" class="panel active">
+      <p style="font-size:13px;color:var(--color-text-secondary);margin:0 0 1rem;">This sends the generic prompt with no information about you. Click generate to see what Claude returns.</p>
+      <button class="gen-btn" id="btn-a" onclick="generateA()">Generate generic roadmap ↗</button>
+      <div id="status-a" class="status"></div>
+      <div id="out-a" class="output" style="display:none"></div>
+    </div>
+
+    <div id="panel-b" class="panel">
+      <p style="font-size:13px;color:var(--color-text-secondary);margin:0 0 1rem;">Fill in your details, then generate a roadmap built specifically for you.</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Current situation</label>
+          <select id="situation">
+            <option>Student</option><option>Professional</option><option>Freelancer</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Experience level</label>
+          <select id="level">
+            <option>Beginner</option><option>Intermediate</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Current skills (e.g. Excel, Python)</label>
+          <input type="text" id="skills" placeholder="e.g. basic Excel, HTML" />
+        </div>
+        <div class="form-group">
+          <label>Your goal</label>
+          <input type="text" id="goal" placeholder="e.g. get a data analyst job" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Available time per day</label>
+          <select id="time">
+            <option>1 hour</option><option>2 hours</option><option>3 hours</option><option>4+ hours</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Preferred learning style</label>
+          <select id="style">
+            <option>Videos</option><option>Projects</option><option>Reading</option><option>Mixed</option>
+          </select>
+        </div>
+      </div>
+      <button class="gen-btn" id="btn-b" onclick="generateB()">Generate my personalized roadmap ↗</button>
+      <div id="status-b" class="status"></div>
+      <div id="out-b" class="output" style="display:none"></div>
+    </div>
+  </div>
+
+  <div id="compare" class="panel">
+    <p style="font-size:13px;color:var(--color-text-secondary);margin:0 0 1rem;">Generates both roadmaps simultaneously using your Prompt B details (fill them in the other tab first) so you can compare them directly.</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Goal (for Prompt B)</label>
+        <input type="text" id="cmp-goal" placeholder="e.g. become a UX designer" />
+      </div>
+      <div class="form-group">
+        <label>Available time</label>
+        <select id="cmp-time">
+          <option>1 hour</option><option>2 hours</option><option>3 hours</option><option>4+ hours</option>
+        </select>
+      </div>
+    </div>
+    <button class="gen-btn" id="btn-cmp" onclick="generateBoth()">Generate both and compare ↗</button>
+    <div id="status-cmp" class="status"></div>
+    <div id="cmp-output" style="display:none;margin-top:1.5rem;">
+      <div class="compare-grid">
+        <div class="compare-card">
+          <span class="badge badge-a">Prompt A — no context</span>
+          <h3>Generic roadmap</h3>
+          <div id="cmp-a" class="out loading">Generating…</div>
+        </div>
+        <div class="compare-card">
+          <span class="badge badge-b">Prompt B — with context</span>
+          <h3>Personalized roadmap</h3>
+          <div id="cmp-b" class="out loading">Generating…</div>
+        </div>
+      </div>
+      <div class="insight-box" id="insight-box" style="display:none;">
+        <p id="insight-text"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(t) {
+  document.querySelectorAll('.tabs .tab').forEach((b,i)=>{
+    if(i<2) b.classList.toggle('active', (i===0&&t==='solo')||(i===1&&t==='compare'));
+  });
+  document.getElementById('solo').classList.toggle('active', t==='solo');
+  document.getElementById('compare').classList.toggle('active', t==='compare');
+}
+function showSubTab(t) {
+  document.getElementById('st-a').classList.toggle('active', t==='a');
+  document.getElementById('st-b').classList.toggle('active', t==='b');
+  document.getElementById('panel-a').classList.toggle('active', t==='a');
+  document.getElementById('panel-b').classList.toggle('active', t==='b');
+}
+
+async function callClaude(prompt, onChunk) {
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      stream: true,
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+  const reader = resp.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split("\n");
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const d = line.slice(6).trim();
+      if (d === "[DONE]") continue;
+      try {
+        const j = JSON.parse(d);
+        if (j.type === "content_block_delta" && j.delta?.text) onChunk(j.delta.text);
+      } catch {}
+    }
+  }
+}
+
+const PROMPT_A = `Create a concise 30-day learning roadmap.
+Include: weekly milestones, daily tasks, 2-3 resources, 1 project, final outcome.
+Be practical and beginner-friendly. Keep it under 350 words.`;
+
+function buildPromptB(goal, time, situation, level, skills, style) {
+  return `Create a concise 30-day learning roadmap.
+Context:
+- Current Situation: ${situation||'Student'}
+- Current Skills: ${skills||'none specified'}
+- Goal: ${goal||'learn a new skill'}
+- Available Time: ${time||'1 hour'} per day
+- Experience Level: ${level||'Beginner'}
+- Preferred Learning Style: ${style||'Mixed'}
+Include: weekly milestones, daily tasks, 2-3 specific resources, 1 hands-on project, final outcome.
+Be practical and beginner-friendly. Keep it under 350 words.`;
+}
+
+async function generateA() {
+  const btn = document.getElementById('btn-a');
+  const out = document.getElementById('out-a');
+  const status = document.getElementById('status-a');
+  btn.disabled = true; btn.textContent = "Generating…";
+  out.style.display = 'block'; out.className = 'output'; out.textContent = '';
+  status.textContent = 'Streaming response from Claude…';
+  try {
+    await callClaude(PROMPT_A, t => { out.textContent += t; });
+    status.textContent = 'Done.';
+  } catch(e) { out.textContent = 'Error: ' + e.message; }
+  btn.disabled = false; btn.textContent = 'Regenerate ↗';
+}
+
+async function generateB() {
+  const btn = document.getElementById('btn-b');
+  const out = document.getElementById('out-b');
+  const status = document.getElementById('status-b');
+  const goal = document.getElementById('goal').value;
+  const time = document.getElementById('time').value;
+  const situation = document.getElementById('situation').value;
+  const level = document.getElementById('level').value;
+  const skills = document.getElementById('skills').value;
+  const style = document.getElementById('style').value;
+  btn.disabled = true; btn.textContent = "Generating…";
+  out.style.display = 'block'; out.className = 'output'; out.textContent = '';
+  status.textContent = 'Streaming response from Claude…';
+  try {
+    await callClaude(buildPromptB(goal,time,situation,level,skills,style), t => { out.textContent += t; });
+    status.textContent = 'Done.';
+  } catch(e) { out.textContent = 'Error: ' + e.message; }
+  btn.disabled = false; btn.textContent = 'Regenerate ↗';
+}
+
+async function generateBoth() {
+  const btn = document.getElementById('btn-cmp');
+  const goal = document.getElementById('cmp-goal').value || 'learn a new skill';
+  const time = document.getElementById('cmp-time').value;
+  const status = document.getElementById('status-cmp');
+  btn.disabled = true; btn.textContent = "Generating both…";
+  document.getElementById('cmp-output').style.display = 'block';
+  document.getElementById('cmp-a').className = 'out loading';
+  document.getElementById('cmp-a').textContent = 'Generating…';
+  document.getElementById('cmp-b').className = 'out loading';
+  document.getElementById('cmp-b').textContent = 'Generating…';
+  document.getElementById('insight-box').style.display = 'none';
+  status.textContent = 'Running both prompts in parallel…';
+
+  const elA = document.getElementById('cmp-a');
+  const elB = document.getElementById('cmp-b');
+  elA.textContent = ''; elB.textContent = '';
+  elA.className = 'out'; elB.className = 'out';
+
+  try {
+    await Promise.all([
+      callClaude(PROMPT_A, t => { elA.textContent += t; }),
+      callClaude(buildPromptB(goal, time, 'Professional', 'Beginner', 'some basics', 'Mixed'), t => { elB.textContent += t; })
+    ]);
+    status.textContent = 'Both generated.';
+    const insight = document.getElementById('insight-box');
+    const txt = document.getElementById('insight-text');
+    txt.innerHTML = `<strong>What just happened?</strong> Prompt A produced a generic skeleton — valid but applicable to anyone, which means it's perfectly tailored for no one. Prompt B received your goal (<em>${goal}</em>) and time budget (${time}/day), so it could drop irrelevant steps, right-size the daily workload, and name resources that match your starting point. Context doesn't just personalise the tone — it changes which steps are included, which are skipped, and how fast the pace moves.`;
+    insight.style.display = 'block';
+  } catch(e) { status.textContent = 'Error: ' + e.message; }
+  btn.disabled = false; btn.textContent = 'Regenerate both ↗';
+}
+</script>
